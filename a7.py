@@ -114,30 +114,73 @@ class BayesClassifier:
 
 
     def classify(self, text: str) -> str:
-        """Classifies given text as positive, or negative from calculating the
+        """Classifies given text as positive, negative or neutral from calculating the
         most likely document class to which the target string belongs
 
         Args:
             text - text to classify
 
         Returns:
-            classification, either positive, or negative
+            classification, either positive, negative or neutral
         """
+        # TODO: fill me out
+        
+        # get a list of the individual tokens that occur in text
         tokens = self.tokenize(text)
-        sum_pos = sum(self.pos_freqs.values())
-        sum_neg = sum(self.neg_freqs.values())
+        print(tokens)
 
-        vocab_size = len(set(list(self.pos_freqs.keys()) + list(self.neg_freqs.keys())))
-        pos_log_prob = 0.0
-        neg_log_prob = 0.0
+        file = self.load_file("sorted_stoplist.txt")
+        stopwords = self.tokenize(file)
+
+
+        # create some variables to store the positive and negative probability. since
+        # we will be adding logs of probabilities, the initial values for the positive
+        # and negative probabilities are set to 0
+        pos_score = 0
+        neg_score = 0
+
+        # get the sum of all of the frequencies of the features in each document class
+        # (i.e. how many words occurred in all documents for the given class) - this
+        # will be used in calculating the probability of each document class given each
+        # individual feature
+        pos_total = sum(self.pos_freqs.values())
+        # print(pos_total)
+        neg_total = sum(self.neg_freqs.values())
+        # print(neg_total)
+        
+        # Creating the entire vocab and finding the size
+        vocab = set(self.pos_freqs.keys()).union(self.neg_freqs.keys())
+        vocab_size = len(vocab)
+
+        # for each token in the text, calculate the probability of it occurring in a
+        # postive document and in a negative document and add the logs of those to the
+        # running sums. when calculating the probabilities, always add 1 to the numerator
+        # of each probability for add one smoothing (so that we never have a probability
+        # of 0)
         for token in tokens:
-             # Probability of token in positive: (count + 1) / (total_pos + vocab_size)
-            pos_count = self.pos_freqs.get(token, 0)
-            pos_log_prob += math.log((pos_count + 1) / (sum_pos + vocab_size))
-            # Probability of token in negative: (count + 1) / (total_neg + vocab_size)
-            neg_count = self.neg_freqs.get(token, 0)
-            neg_log_prob += math.log((neg_count + 1) / (sum_neg + vocab_size))
-        return "positive" if pos_log_prob > neg_log_prob else "negative"
+            if token not in stopwords:
+
+                pos_freqs = self.pos_freqs.get(token, 0) + 1
+                neg_freqs = self.neg_freqs.get(token, 0) + 1
+
+                # print(pos_freqs, neg_freqs)
+
+                pos_score += math.log(pos_freqs / (pos_total + vocab_size))
+                neg_score += math.log(neg_freqs / (neg_total + vocab_size))
+
+        # for debugging purposes, it may help to print the overall positive and negative
+        # probabilities
+        print(f"Positive Probability: {pos_score}")
+        print(f"Negative Probability: {neg_score}")
+
+        # determine whether positive or negative was more probable (i.e. which one was
+        # larger)
+        if pos_score > neg_score:
+            return "positive"
+        else:
+            return "negative"
+
+        # return a string of "positive" or "negative"
 
 
 
@@ -295,10 +338,11 @@ if __name__ == "__main__":
     print(f"P('terrible'| neg) {(b.neg_freqs['terrible']+1)/neg_denominator}")
 
     # # uncomment the below lines once you've implemented `classify`
-    print("\nThe following should all be positive.")
-    print(b.classify('I love computer science'))
-    print(b.classify('this movie is fantastic'))
-    print("\nThe following should all be negative.")
-    print(b.classify('rainy days are the worst'))
-    print(b.classify('computer science is terrible'))
+    #print(b.classify('this movie is fantastic'))
+    #print("\nThe following should all be negative.")
+    #print(b.classify('rainy days are the worst'))
+    #print(b.classify('computer science is terrible'))
+    print(b.classify('Its ok I dont really like it the dad was dumb nemo is annoying just dont just dont watch it'))
+
+
     pass
